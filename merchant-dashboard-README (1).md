@@ -18,9 +18,6 @@ A comprehensive merchant analytics dashboard tracking the health and growth of a
 **[👉 Click to open the interactive dashboard](https://ananyajain2606.github.io/Merchant-Dashboard/)**
 
 > Fully interactive — click each tab to explore Core Metrics, Acquisition, Engagement, Retention, Device, and Revenue views.
-
-![Dashboard Preview](https://via.placeholder.com/900x400/0f1117/1D9E75?text=Merchant+Performance+Dashboard+%E2%80%94+Live+Demo+Available)
-
 ---
 
 ## KPI Framework
