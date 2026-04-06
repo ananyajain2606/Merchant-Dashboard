@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Merchant Performance Dashboard — Ananya Jain</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0f1117;--surface:#1a1d27;--surface2:#22263a;--border:#2e3248;
+    --text:#e8eaf0;--muted:#8b90a8;--accent:#1D9E75;--accent2:#378ADD;
+    --purple:#7F77DD;--amber:#EF9F27;--coral:#D85A30;--green:#639922;
+  }
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+  .shell{max-width:1100px;margin:0 auto;padding:2rem 1.5rem}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
+  .brand{display:flex;flex-direction:column;gap:4px}
+  .brand-title{font-size:1.3rem;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+  .brand-sub{font-size:.8rem;color:var(--muted)}
+  .period-badge{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:.75rem;color:var(--muted)}
+  .author-tag{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
+  .author-tag a{color:var(--accent2);text-decoration:none}
+  .author-tag a:hover{text-decoration:underline}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block}
+
+  /* TABS */
+  .tabs{display:flex;gap:6px;margin-bottom:1.5rem;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 16px;font-size:.8rem;color:var(--muted);cursor:pointer;white-space:nowrap;transition:all .18s;font-family:inherit}
+  .tab:hover{border-color:var(--accent);color:var(--text)}
+  .tab.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  /* SECTIONS */
+  .section{display:none}.section.active{display:block}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.25rem}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;transition:border-color .2s}
+  .kpi-card:hover{border-color:var(--accent)}
+  .kpi-label{font-size:.72rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px}
+  .kpi-val{font-size:1.55rem;font-weight:700;color:var(--text);letter-spacing:-.02em}
+  .kpi-sub{font-size:.75rem;margin-top:5px;display:flex;align-items:center;gap:4px}
+  .up{color:#1D9E75}.down{color:#D85A30}.neu{color:var(--muted)}
+  .arrow-up::before{content:"↑ "}.arrow-down::before{content:"↓ "}
+
+  /* CHARTS */
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:1.25rem}
+  .chart-title{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+  .chart-inner{position:relative;width:100%;height:240px}
+  .chart-inner.sm{height:190px}
+
+  /* GRID LAYOUTS */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+  @media(max-width:600px){.two-col{grid-template-columns:1fr}}
+
+  /* LEGEND */
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px}
+  .leg{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--muted)}
+  .leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+  /* INSIGHT */
+  .insight{background:linear-gradient(135deg,rgba(29,158,117,.08),rgba(55,138,221,.05));border:1px solid rgba(29,158,117,.25);border-radius:10px;padding:14px 16px;margin-bottom:1.25rem}
+  .insight-label{font-size:.7rem;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;font-weight:600}
+  .insight-text{font-size:.82rem;color:var(--muted);line-height:1.7}
+
+  /* FOOTER */
+  .footer{text-align:center;padding:2rem 0 1rem;font-size:.75rem;color:var(--muted);border-top:1px solid var(--border);margin-top:2rem}
+  .footer a{color:var(--accent2);text-decoration:none}
+  .footer span{color:var(--border)}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-title">📊 Merchant Performance Dashboard</div>
+      <div class="brand-sub">Fintech Payments Platform · 48M+ Merchant Ecosystem</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="author-tag">
+        <span class="dot"></span>
+        <span>Ananya Jain &nbsp;·&nbsp; <a href="mailto:ananyajain2606@gmail.com">ananyajain2606@gmail.com</a></span>
+      </div>
+      <div class="period-badge">Mar 2025 — MTD</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('core',this)">Core Metrics</button>
+    <button class="tab" onclick="switchTab('acq',this)">Acquisition</button>
+    <button class="tab" onclick="switchTab('eng',this)">Engagement</button>
+    <button class="tab" onclick="switchTab('ret',this)">Retention</button>
+    <button class="tab" onclick="switchTab('dev',this)">Device</button>
+    <button class="tab" onclick="switchTab('rev',this)">Revenue</button>
+  </div>
+
+  <!-- CORE -->
+  <div class="section active" id="s-core">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Transactions</div>
+        <div class="kpi-val">84.2M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+9.3% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">GMV</div>
+        <div class="kpi-val">₹241B</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+7.8% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Active Merchants</div>
+        <div class="kpi-val">14.6M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+5.1% MoM</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Monthly Trend — Transactions (M) &amp; GMV (₹B)</div>
+      <div class="chart-inner"><canvas id="c-core"></canvas></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>Transactions (M)</div>
+        <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>GMV (₹B)</div>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">GMV per transaction grew +2.3% — merchants are processing higher-value orders, largely driven by SO-onboarded cohorts in Tier 2 &amp; 3 cities.</div>
+    </div>
+  </div>
+
+  <!-- ACQUISITION -->
+  <div class="section" id="s-acq">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">New OB</div>
+        <div class="kpi-val">384K</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+6.2% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">New OB Active</div>
+        <div class="kpi-val">196K</div>
+        <div class="kpi-sub up">51% activation rate ✓</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">DIY Channel</div>
+        <div class="kpi-val">146K</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+14.2% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SO Channel</div>
+        <div class="kpi-val">238K</div>
+        <div class="kpi-sub neu">62% of new OB</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title">Channel Split</div>
+        <div class="chart-inner sm"><canvas id="c-acq-donut"></canvas></div>
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>SO 62%</div>
+          <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>DIY 38%</div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title">New OB vs Active — 6 Months</div>
+        <div class="chart-inner sm"><canvas id="c-acq-bar"></canvas></div>
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:#B5D4F4"></div>New OB</div>
+          <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>OB Active</div>
+        </div>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:12px">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">DIY channel growing 2.3× faster than SO — a clear product-led growth signal. Activation rate at 51% sits within the 45–55% benchmark, indicating strong onboarding quality.</div>
+    </div>
+  </div>
+
+  <!-- ENGAGEMENT -->
+  <div class="section" id="s-eng">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Super Engaged</div>
+        <div class="kpi-val">1.24M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+8.1% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Engaged</div>
+        <div class="kpi-val">3.87M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+4.6% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Repeat</div>
+        <div class="kpi-val">6.12M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+3.2% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Revisits</div>
+        <div class="kpi-val">0.93M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+5.9% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">SE 6+ Users</div>
+        <div class="kpi-val">310K</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+22% MoM 🔥</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Engagement Funnel — Merchant Count (M)</div>
+      <div class="chart-inner" style="height:260px"><canvas id="c-eng"></canvas></div>
+    </div>
+    <div class="insight">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">Super Engaged 6+ Users growing fastest at +22% MoM — this is the highest LTV cohort and prime candidates for Soundbox upsell, premium subscriptions, and Settle Now activation.</div>
+    </div>
+  </div>
+
+  <!-- RETENTION -->
+  <div class="section" id="s-ret">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Churn (M-1 Txn)</div>
+        <div class="kpi-val">1.12M</div>
+        <div class="kpi-sub up"><span class="arrow-down" style="color:#1D9E75"></span>-2.8% MoM ✓</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Winback</div>
+        <div class="kpi-val">0.44M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+12% MoM 🔥</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Churn vs Winback — 6 Month Trend</div>
+      <div class="chart-inner"><canvas id="c-ret"></canvas></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#D85A30"></div>Churn (M)</div>
+        <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>Winback (M)</div>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">Churn is on a consistent downward trajectory while Winback grows at +12% MoM — net retention is improving. Targeted re-engagement campaigns are showing measurable ROI.</div>
+    </div>
+  </div>
+
+  <!-- DEVICE -->
+  <div class="section" id="s-dev">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">SB Merchants</div>
+        <div class="kpi-val">5.69M</div>
+        <div class="kpi-sub neu">39% penetration</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Non-SB Merchants</div>
+        <div class="kpi-val">8.91M</div>
+        <div class="kpi-sub neu">61% headroom</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">New SB Deployments</div>
+        <div class="kpi-val">68.4K</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+11% MoM</div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title">SB Penetration</div>
+        <div class="chart-inner sm"><canvas id="c-dev-donut"></canvas></div>
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:#EF9F27"></div>SB 39%</div>
+          <div class="leg"><div class="leg-dot" style="background:#444461"></div>Non-SB 61%</div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:0">
+        <div class="chart-title">New SB Deployments — 6 Months (K)</div>
+        <div class="chart-inner sm"><canvas id="c-dev-bar"></canvas></div>
+      </div>
+    </div>
+    <div class="insight" style="margin-top:12px">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">SB merchants show 2.4× higher retention vs Non-SB. With 61% of active merchants still on Non-SB, device expansion is the single highest-ROI upsell motion available.</div>
+    </div>
+  </div>
+
+  <!-- REVENUE -->
+  <div class="section" id="s-rev">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">UPI CC Revenue</div>
+        <div class="kpi-val">₹4.2Cr</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+8.4% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Settle Now Active</div>
+        <div class="kpi-val">2.14M</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+9.7% MoM</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Settle Now Revenue</div>
+        <div class="kpi-val">₹6.8Cr</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+11% MoM 🔥</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Subscription Revenue</div>
+        <div class="kpi-val">₹18.3Cr</div>
+        <div class="kpi-sub up"><span class="arrow-up"></span>+4.2% MoM</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Revenue Streams — 6 Month Trend (₹Cr)</div>
+      <div class="chart-inner"><canvas id="c-rev"></canvas></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#639922"></div>Subscription</div>
+        <div class="leg"><div class="leg-dot" style="background:#1D9E75"></div>Settle Now</div>
+        <div class="leg"><div class="leg-dot" style="background:#378ADD"></div>UPI CC</div>
+      </div>
+    </div>
+    <div class="insight">
+      <div class="insight-label">Key Insight</div>
+      <div class="insight-text">Subscription revenue dominates at 62% share — a stable recurring base. Settle Now is growing fastest at +11% MoM, signalling merchant trust in cash-flow management tools.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>Built by <strong>Ananya Jain</strong> &nbsp;<span>·</span>&nbsp; Business Analyst · Fintech &amp; Analytics &nbsp;<span>·</span>&nbsp; <a href="mailto:ananyajain2606@gmail.com">ananyajain2606@gmail.com</a></p>
+    <p style="margin-top:6px;font-size:.7rem">All metrics are fictional and created for portfolio purposes. Dashboard structure is inspired by real-world fintech merchant analytics.</p>
+  </div>
+
+</div>
+
+<script>
+function switchTab(id,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('s-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+const months=['Oct','Nov','Dec','Jan','Feb','Mar'];
+const gridColor='rgba(255,255,255,.06)';
+const tickColor='#8b90a8';
+const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+  x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},
+  y:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}}
+}};
+
+// CORE
+new Chart(document.getElementById('c-core'),{type:'bar',data:{labels:months,datasets:[
+  {label:'Txn (M)',data:[62,67,71,74,77,84],backgroundColor:'rgba(29,158,117,.8)',borderRadius:5},
+  {label:'GMV (₹B)',data:[172,189,203,215,224,241],backgroundColor:'rgba(55,138,221,.8)',borderRadius:5}
+]},options:{...base}});
+
+// ACQ DONUT
+new Chart(document.getElementById('c-acq-donut'),{type:'doughnut',data:{
+  labels:['SO','DIY'],
+  datasets:[{data:[62,38],backgroundColor:['#378ADD','#1D9E75'],borderWidth:0,hoverOffset:6}]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}});
+
+// ACQ BAR
+new Chart(document.getElementById('c-acq-bar'),{type:'bar',data:{labels:months,datasets:[
+  {label:'New OB',data:[310,328,346,358,362,384],backgroundColor:'rgba(55,138,221,.3)',borderRadius:4},
+  {label:'OB Active',data:[142,151,162,171,176,196],backgroundColor:'rgba(55,138,221,.85)',borderRadius:4}
+]},options:{...base}});
+
+// ENGAGEMENT HORIZONTAL
+new Chart(document.getElementById('c-eng'),{type:'bar',data:{
+  labels:['Repeat','Engaged','Super Engaged','Revisits','SE 6+ Users'],
+  datasets:[{data:[6.12,3.87,1.24,0.93,0.31],
+    backgroundColor:['rgba(127,119,221,.5)','rgba(127,119,221,.6)','rgba(127,119,221,.85)','rgba(127,119,221,.4)','rgba(83,74,183,.95)'],
+    borderRadius:5}]
+},options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{ticks:{color:tickColor,font:{size:11}},grid:{color:gridColor}},
+    y:{ticks:{color:'#e8eaf0',font:{size:12}},grid:{display:false}}
+  }
+}});
+
+// RETENTION LINE
+new Chart(document.getElementById('c-ret'),{type:'line',data:{labels:months,datasets:[
+  {label:'Churn',data:[1.38,1.31,1.27,1.22,1.15,1.12],borderColor:'#D85A30',backgroundColor:'rgba(216,90,48,.08)',fill:true,tension:.45,pointRadius:4,pointBackgroundColor:'#D85A30'},
+  {label:'Winback',data:[0.28,0.31,0.34,0.37,0.39,0.44],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',fill:true,tension:.45,pointRadius:4,pointBackgroundColor:'#1D9E75'}
+]},options:{...base}});
+
+// DEVICE DONUT
+new Chart(document.getElementById('c-dev-donut'),{type:'doughnut',data:{
+  labels:['SB','Non-SB'],
+  datasets:[{data:[39,61],backgroundColor:['#EF9F27','#2e3248'],borderWidth:0,hoverOffset:6}]
+},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'68%'}});
+
+// DEVICE BAR
+new Chart(document.getElementById('c-dev-bar'),{type:'bar',data:{labels:months,datasets:[
+  {data:[48,52,56,60,62,68],backgroundColor:'rgba(239,159,39,.8)',borderRadius:5}
+]},options:{...base}});
+
+// REVENUE
+new Chart(document.getElementById('c-rev'),{type:'line',data:{labels:months,datasets:[
+  {label:'Subscription',data:[15.1,15.8,16.4,16.9,17.6,18.3],borderColor:'#639922',backgroundColor:'rgba(99,153,34,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#639922'},
+  {label:'Settle Now',data:[4.1,4.6,5.1,5.6,6.1,6.8],borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#1D9E75'},
+  {label:'UPI CC',data:[2.8,3.1,3.4,3.7,3.9,4.2],borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.08)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'#378ADD'}
+]},options:{...base}});
+</script>
+</body>
+</html>
